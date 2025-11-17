@@ -40,7 +40,7 @@ class StatusUpdate(models.Model):
 
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='status_updates')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
-    problem = models.TextField(blank=True, help_text="Description of the problem (if any)")
+    comments = models.TextField(blank=True, help_text="Comments about this status update")
     plan = models.TextField(blank=True, help_text="Plan to resolve the issue (if any)")
     created_at = models.DateTimeField(default=timezone.now)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)

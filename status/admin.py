@@ -34,9 +34,9 @@ class ServiceAdmin(admin.ModelAdmin):
 
 @admin.register(StatusUpdate)
 class StatusUpdateAdmin(admin.ModelAdmin):
-    list_display = ['service', 'status_badge', 'created_at', 'created_by_display', 'has_problem', 'has_plan']
+    list_display = ['service', 'status_badge', 'created_at', 'created_by_display', 'has_comments', 'has_plan']
     list_filter = ['status', 'service', 'created_at', 'created_by']
-    search_fields = ['service__name', 'problem', 'plan', 'created_by__username', 'created_by__first_name', 'created_by__last_name']
+    search_fields = ['service__name', 'comments', 'plan', 'created_by__username', 'created_by__first_name', 'created_by__last_name']
     readonly_fields = ['created_at', 'created_by_display']
     ordering = ['-created_at']
     date_hierarchy = 'created_at'
@@ -46,8 +46,8 @@ class StatusUpdateAdmin(admin.ModelAdmin):
             'fields': ('service', 'status', 'created_at', 'created_by_display')
         }),
         ('Details', {
-            'fields': ('problem', 'plan'),
-            'description': 'Provide details about any issues and the plan to resolve them.'
+            'fields': ('comments', 'plan'),
+            'description': 'Provide comments about this status update and any plan to resolve issues.'
         }),
     )
 
@@ -68,14 +68,14 @@ class StatusUpdateAdmin(admin.ModelAdmin):
 
     status_badge.short_description = 'Status'
 
-    def has_problem(self, obj):
+    def has_comments(self, obj):
         return format_html(
             '<span style="color: {};">{}</span>',
-            '#10b981' if obj.problem else '#9ca3af',
-            '✓' if obj.problem else '—'
+            '#10b981' if obj.comments else '#9ca3af',
+            '✓' if obj.comments else '—'
         )
 
-    has_problem.short_description = 'Problem'
+    has_comments.short_description = 'Comments'
 
     def has_plan(self, obj):
         return format_html(
