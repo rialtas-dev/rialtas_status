@@ -1,0 +1,179 @@
+{% extends 'status/base.html' %}
+
+{% block title %}Rialtas Status - System Status{% endblock %}
+
+{% block content %}
+<!-- Page header -->
+<div class="mb-8">
+    <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight">
+        System Status
+    </h1>
+</div>
+
+<!-- Overall Status Banner -->
+<div class="mb-6 rounded-lg shadow ring-1 ring-slate-200 p-6 {% if overall_status == 'stable' %}bg-green-50{% elif overall_status == 'maintenance' %}bg-blue-50{% elif overall_status == 'degraded' %}bg-yellow-50{% elif overall_status == 'partial' %}bg-orange-50{% else %}bg-red-50{% endif %}">
+    <div class="flex items-center justify-center">
+        <div class="text-center">
+            {% if overall_status == 'stable' %}
+                <div class="text-4xl mb-2">✓</div>
+                <h2 class="text-2xl font-bold text-green-900">All Systems Operational</h2>
+                <p class="text-green-700 mt-1">Everything is running smoothly</p>
+            {% elif overall_status == 'maintenance' %}
+                <div class="text-4xl mb-2">🔧</div>
+                <h2 class="text-2xl font-bold text-blue-900">Maintenance in Progress</h2>
+                <p class="text-blue-700 mt-1">Some systems are undergoing scheduled maintenance</p>
+            {% elif overall_status == 'degraded' %}
+                <div class="text-4xl mb-2">⚠️</div>
+                <h2 class="text-2xl font-bold text-yellow-900">Degraded Performance</h2>
+                <p class="text-yellow-700 mt-1">Some systems are experiencing issues</p>
+            {% elif overall_status == 'partial' %}
+                <div class="text-4xl mb-2">⚠️</div>
+                <h2 class="text-2xl font-bold text-orange-900">Partial Outage</h2>
+                <p class="text-orange-700 mt-1">Some systems are currently unavailable</p>
+            {% else %}
+                <div class="text-4xl mb-2">✗</div>
+                <h2 class="text-2xl font-bold text-red-900">Major Outage</h2>
+                <p class="text-red-700 mt-1">Critical systems are down</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Services List -->
+<div class="space-y-4">
+    <h2 class="text-xl font-semibold tracking-tight">Services</h2>
+
+    {% for item in services_data %}
+    <div class="rounded-lg shadow ring-1 ring-slate-200 bg-white overflow-hidden">
+        <!-- Service Header (Clickable) -->
+        <button onclick="toggleHistory('service-{{ item.service.id }}')" class="w-full p-6 text-left hover:bg-slate-50 transition-colors">
+            <div class="flex items-center justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center space-x-3">
+                        <h3 class="text-lg font-semibold text-slate-900">{{ item.service.name }}</h3>
+                        {% if item.current_status %}
+                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                                {% if item.current_status.status == 'stable' %}bg-green-100 text-green-800
+                                {% elif item.current_status.status == 'maintenance' %}bg-blue-100 text-blue-800
+                                {% elif item.current_status.status == 'degraded' %}bg-yellow-100 text-yellow-800
+                                {% elif item.current_status.status == 'partial' %}bg-orange-100 text-orange-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ item.current_status.get_status_display }}
+                            </span>
+                        {% else %}
+                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">
+                                No Status
+                            </span>
+                        {% endif %}
+                    </div>
+                    {% if item.service.description %}
+                        <p class="text-sm text-slate-600 mt-2">{{ item.service.description }}</p>
+                    {% endif %}
+                    {% if item.current_status and item.current_status.problem %}
+                        <div class="mt-3 p-3 bg-red-50 border-l-4 border-red-400 rounded">
+                            <p class="text-sm font-medium text-red-800">Problem:</p>
+                            <p class="text-sm text-red-700 mt-1 whitespace-pre-wrap">{{ item.current_status.problem }}</p>
+                            {% if item.current_status.plan %}
+                                <p class="text-sm font-medium text-red-800 mt-2">Plan:</p>
+                                <p class="text-sm text-red-700 mt-1 whitespace-pre-wrap">{{ item.current_status.plan }}</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="ml-4">
+                    <svg id="arrow-service-{{ item.service.id }}" class="w-5 h-5 text-slate-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+            </div>
+        </button>
+
+        <!-- History Section (Hidden by default) -->
+        <div id="service-{{ item.service.id }}" class="hidden border-t border-slate-200 bg-slate-50">
+            <div class="p-6 space-y-4">
+                <h4 class="text-sm font-semibold text-slate-900 mb-3">Recent Updates (Last 5)</h4>
+
+                {% if item.recent_updates %}
+                    {% for update in item.recent_updates %}
+                    <div class="rounded-lg shadow ring-1 ring-slate-200 bg-white p-4">
+                        <!-- Status Header -->
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-3">
+                                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                                    {% if update.status == 'stable' %}bg-green-100 text-green-800
+                                    {% elif update.status == 'maintenance' %}bg-blue-100 text-blue-800
+                                    {% elif update.status == 'degraded' %}bg-yellow-100 text-yellow-800
+                                    {% elif update.status == 'partial' %}bg-orange-100 text-orange-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ update.get_status_display }}
+                                </span>
+                                <span class="text-xs text-slate-500">
+                                    {{ update.created_at|date:"F d, Y H:i" }} UTC
+                                </span>
+                            </div>
+                            {% if update.created_by %}
+                                <span class="text-xs text-slate-500">by {% if update.created_by.get_full_name %}{{ update.created_by.get_full_name }}{% else %}{{ update.created_by.username }}{% endif %}</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Problem Section -->
+                        {% if update.problem %}
+                        <div class="mb-3">
+                            <h5 class="text-xs font-semibold text-slate-900 mb-1">Problem:</h5>
+                            <div class="bg-red-50 border-l-4 border-red-400 p-3 rounded">
+                                <p class="text-xs text-slate-700 whitespace-pre-wrap">{{ update.problem }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Plan Section -->
+                        {% if update.plan %}
+                        <div>
+                            <h5 class="text-xs font-semibold text-slate-900 mb-1">Plan:</h5>
+                            <div class="bg-blue-50 border-l-4 border-blue-400 p-3 rounded">
+                                <p class="text-xs text-slate-700 whitespace-pre-wrap">{{ update.plan }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- No Details Message -->
+                        {% if not update.problem and not update.plan %}
+                        <p class="text-xs text-slate-500 italic">No additional details provided.</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="rounded-lg shadow ring-1 ring-slate-200 bg-white p-4 text-center">
+                        <p class="text-sm text-slate-600">No status updates available for this service.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="rounded-lg shadow ring-1 ring-slate-200 bg-white p-6 text-center">
+        <p class="text-slate-600">No services configured yet.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Last Updated -->
+<div class="text-center text-sm text-slate-500 mt-8">
+    <p>Last updated: {% now "F d, Y H:i" %} UTC</p>
+</div>
+
+<script>
+function toggleHistory(serviceId) {
+    const historyDiv = document.getElementById(serviceId);
+    const arrow = document.getElementById('arrow-' + serviceId);
+
+    if (historyDiv.classList.contains('hidden')) {
+        historyDiv.classList.remove('hidden');
+        arrow.classList.add('rotate-180');
+    } else {
+        historyDiv.classList.add('hidden');
+        arrow.classList.remove('rotate-180');
+    }
+}
+</script>
+{% endblock %}
