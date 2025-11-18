@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
+import secrets
 
 
 class Service(models.Model):
@@ -65,3 +66,32 @@ class StatusUpdate(models.Model):
             'maintenance': 'blue',
         }
         return colors.get(self.status, 'gray')
+
+
+class APIKey(models.Model):
+    """API key for authenticating external applications"""
+
+    name = models.CharField(max_length=100, help_text="Descriptive name for this API key (e.g., 'Mobile App', 'Monitoring Service')")
+    key = models.CharField(max_length=64, unique=True, editable=False)
+    is_active = models.BooleanField(default=True, help_text="Whether this API key is currently active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    last_used_at = models.DateTimeField(null=True, blank=True, help_text="Last time this API key was used")
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "API Key"
+        verbose_name_plural = "API Keys"
+
+    def __str__(self):
+        return f"{self.name} ({'Active' if self.is_active else 'Inactive'})"
+
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = self.generate_key()
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def generate_key():
+        """Generate a secure random API key"""
+        return secrets.token_urlsafe(48)

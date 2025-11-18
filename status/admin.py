@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Service, StatusUpdate
+from .models import Service, StatusUpdate, APIKey
 
 
 @admin.register(Service)
@@ -98,5 +98,42 @@ class StatusUpdateAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         if not obj.created_by_id:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(APIKey)
+class APIKeyAdmin(admin.ModelAdmin):
+    list_display = ['name', 'key_display', 'is_active', 'created_at', 'last_used_at', 'created_by']
+    list_filter = ['is_active', 'created_at', 'last_used_at']
+    search_fields = ['name', 'key']
+    readonly_fields = ['key', 'created_at', 'last_used_at', 'created_by']
+    ordering = ['-created_at']
+    date_hierarchy = 'created_at'
+
+    fieldsets = (
+        ('API Key Information', {
+            'fields': ('name', 'key', 'is_active')
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'created_by', 'last_used_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def key_display(self, obj):
+        """Display first 16 characters of the key with copy button"""
+        if obj.key:
+            short_key = obj.key[:16] + '...'
+            return format_html(
+                '<code style="background-color: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 12px;">{}</code>',
+                short_key
+            )
+        return '—'
+
+    key_display.short_description = 'API Key'
+
+    def save_model(self, request, obj, form, change):
+        if not change:  # Only set created_by on creation
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
